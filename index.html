@@ -12,8 +12,8 @@ main{max-width:860px;margin:0 auto;padding:16px}
 h1{font-size:20px;margin:0 0 4px}h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--mu);margin:0 0 10px}
 p.s{color:var(--mu);margin:0 0 14px;font-size:13px}
 .card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:14px}
-.tw{overflow-x:auto}table{width:100%;border-collapse:collapse;min-width:620px}
-th{text-align:left;font-size:12px;color:var(--mu);font-weight:600;padding:4px 6px}td{padding:4px 6px;border-top:1px solid var(--bd)}
+.tw{overflow:auto;max-height:460px}table{width:100%;border-collapse:collapse;min-width:620px}
+th{position:sticky;top:0;background:var(--card);text-align:left;font-size:12px;color:var(--mu);font-weight:600;padding:4px 6px}td{padding:4px 6px;border-top:1px solid var(--bd)}
 input,select,textarea,button{font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:6px 8px}
 input[type=text],input[type=number]{width:100%}td input[type=number]{width:84px}
 input[type=checkbox]{width:18px;height:18px}
@@ -26,11 +26,12 @@ textarea{width:100%;min-height:90px;font-family:ui-monospace,Consolas,monospace;
 .mu{color:var(--mu);font-size:12px}
 </style></head><body><main>
 <h1>SWDT Trait Odds</h1>
-<p class="s">Enter the odds you know, log real spins, and the tool blends both into the most accurate estimate it can.</p>
+<p class="s">Every trait roll outcome is preloaded. The game doesn’t publish the odds, so log your scans and the tool estimates them. If you know the odds, enter them and they get blended in.</p>
 
 <div class="card"><h2>1 · Traits</h2>
+<div class="row" style="margin:0 0 10px"><label>Rolling on <select id="pool"></select></label></div>
 <div class="tw"><table><thead><tr><th>Target</th><th>Trait</th><th>Stated odds %</th><th>Spins seen</th><th>Estimate</th><th>95% range</th><th></th></tr></thead><tbody id="tb"></tbody></table></div>
-<div class="row"><button id="add">+ Add trait</button><button id="ex">Load example</button><button id="clr">Clear</button></div>
+<div class="row"><button id="add">+ Add trait</button><button id="clr">Reset pool</button></div>
 <div class="row"><label>Estimate method
 <select id="mode"><option value="blend">Blend (stated + observed)</option><option value="obs">Observed only</option><option value="stated">Stated only</option></select></label>
 <label>Trust in stated odds (pseudo-spins) <input id="k" type="number" min="0" value="50" style="width:80px"></label></div>
@@ -44,7 +45,7 @@ textarea{width:100%;min-height:90px;font-family:ui-monospace,Consolas,monospace;
 </div>
 
 <div class="card"><h2>3 · Odds for your target</h2>
-<div class="row" style="margin:0 0 10px"><label>Spins available <input id="n" type="number" min="1" value="100" style="width:100px"></label></div>
+<div class="row" style="margin:0 0 10px"><label>Spins available <input id="n" type="number" min="1" value="100" style="width:100px"></label><label>Nova Crystals per spin <input id="cost" type="number" min="0" value="10" style="width:90px"></label></div>
 <div class="g" id="res"></div>
 <p class="mu" id="note"></p>
 </div>
@@ -56,13 +57,25 @@ textarea{width:100%;min-height:90px;font-family:ui-monospace,Consolas,monospace;
 
 <script>
 const $=id=>document.getElementById(id);
-let S={t:[],k:50,mode:"blend",sel:{}};
-try{const r=localStorage.getItem("swdt-odds");if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
-const save=()=>{try{localStorage.setItem("swdt-odds",JSON.stringify(S))}catch(e){}};
+const Q=["Default","Gold","Diamond","Rainbow"];
+const STD=[["Credit Per Second Multiplier","%",[10,20,30,50]],["Pickaxe Level","",[2,4,6,10]],["Health","",[50,100,150,250]],["Crafting Speed","%",[5,10,15,25]],["Critical Chance","%",[5,10,15,25]],["Critical Amount","%",[10,20,30,50]],["Upgrade Chip Bonus","%",[20,40,60,100]],["Scrap Specialist","%",[10,20,30,50]],["Fusion Expert","%",[20,40,70,100]],["Mission Efficiency","%",[5,10,15,25]],["Offline Earnings","%",[2,4,6,10]]];
+const RO=[["Passive Credits","25% credits/5s as companion"],["Overclocked","2x companion bonus"],["Chip Finder","+100% chips on build"],["Fusion Preservation","kept in fusion, trait locks"],["Golden Splash Refill","gold splash every 2 min"]];
+const ICON={"BB-8":"Upgrade Chip Master","Mister Bones":"Lifesteal","IG-11 Marshal":"Blueprint Protector","DJ R-3X":"World Mission Master","CB-23":"Hyperdrive","R2-D2":"Double Crate Chance","C-3PO":"Droid Sell Master","Chopper":"Crit Expert","D-O":"Fusion Master","WG-22":"Flawless Duplicator","Scourge Prime":"Hivemind Bonus (+5)"};
+const seed=pool=>{const r=[];
+  STD.forEach(([n,u,v])=>Q.forEach((q,j)=>r.push({n:n+" · "+q+" ("+(v[j]==null?"+?":"+"+v[j]+u)+")",p:"",c:0})));
+  RO.forEach(([n,d])=>r.push({n:n+" · Rainbow ("+d+")",p:"",c:0}));
+  if(ICON[pool])r.push({n:ICON[pool]+" (Iconic · "+pool+")",p:"",c:0});
+  return r};
+let S={t:null,k:50,mode:"blend",sel:{},pool:"Mythic",cost:10,data:{}};
+try{const r=localStorage.getItem("swdt-odds3");if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
+S.t=S.data[S.pool]||seed(S.pool);
+const fix=a=>a.forEach(t=>{const m=/^(.*) · (Default|Gold|Diamond|Rainbow) \(.*\)$/.exec(t.n||"");if(!m)return;const s=STD.find(x=>x[0]===m[1]);if(!s)return;const v=s[2][Q.indexOf(m[2])];t.n=m[1]+" · "+m[2]+" ("+(v==null?"+?":"+"+v+s[1])+")"});
+Object.values(S.data).forEach(fix);fix(S.t);
+const save=()=>{S.data[S.pool]=S.t;try{localStorage.setItem("swdt-odds3",JSON.stringify(S))}catch(e){}};
 const pc=x=>(x*100).toFixed(x<.01?3:2)+"%";
 const fx=x=>x>0?"1 in "+(1/x>=100?Math.round(1/x):(1/x).toFixed(1)):"—";
 function est(){
-  const sp=S.t.reduce((a,t)=>a+(+t.p||0),0),N=S.t.reduce((a,t)=>a+(+t.c||0),0),k=Math.max(0,+S.k||0);
+  const sp=S.t.reduce((a,t)=>a+(+t.p||0),0),N=S.t.reduce((a,t)=>a+(+t.c||0),0),k=sp>0?Math.max(0,+S.k||0):0;
   return S.t.map(t=>{
     const ps=sp>0?(+t.p||0)/sp:0,c=+t.c||0;let m,lo,hi;
     if(S.mode==="stated"||(S.mode==="obs"&&N===0&&false)){m=ps;lo=hi=null}
@@ -88,7 +101,7 @@ function row(t,i){
 }
 function build(){
   const tb=$("tb");tb.innerHTML="";S.t.forEach((t,i)=>tb.appendChild(row(t,i)));
-  $("mode").value=S.mode;$("k").value=S.k;logb();upd();
+  $("mode").value=S.mode;$("k").value=S.k;$("pool").value=S.pool;$("cost").value=S.cost;logb();upd();
 }
 function logb(){
   const l=$("log");l.innerHTML="";
@@ -124,15 +137,18 @@ function upd(names){
     ["50% likely by",spinsFor(p,.5)+" spins","median"],
     ["90% likely by",spinsFor(p,.9)+" spins",""],
     ["99% likely by",spinsFor(p,.99)+" spins",""],
-    ["Within "+n+" spins",pc(at(p)),lo==null?"":pc(at(lo))+" – "+pc(at(hi))]
+    ["Within "+n+" spins",pc(at(p)),lo==null?"":pc(at(lo))+" – "+pc(at(hi))],
+    ["Expected cost",p>0?Math.round((+S.cost||0)/p).toLocaleString()+" NC":"∞","at "+(+S.cost||0)+" NC per spin"]
   ];
   R.innerHTML=cells.map(c=>'<div class="k"><span>'+c[0]+'</span><b>'+c[1]+'</b><span>'+c[2]+'</span></div>').join("");
   $("note").textContent=lo==null?"Using stated odds only, so no uncertainty range.":"Ranges are 95% and shrink as you log more spins. Spins are treated as independent.";
   save();
 }
 $("add").onclick=()=>{S.t.push({n:"",p:"",c:0});build()};
-$("clr").onclick=()=>{if(confirm("Clear all traits and spin counts?")){S.t=[];S.sel={};build()}};
-$("ex").onclick=()=>{S.t=[{n:"Example A",p:60,c:0},{n:"Example B",p:30,c:0},{n:"Example C",p:9,c:0},{n:"Example D",p:1,c:0}];S.sel={3:true};build()};
+$("pool").innerHTML=["Mythic"].concat(Object.keys(ICON)).map(d=>'<option value="'+d+'">'+(d==="Mythic"?"Mythic droid (standard pool)":"Iconic: "+d)+'</option>').join("");
+$("pool").onchange=e=>{S.data[S.pool]=S.t;S.pool=e.target.value;S.t=S.data[S.pool]||seed(S.pool);S.sel={};S.cost=S.pool==="Mythic"?10:200;build()};
+$("cost").oninput=e=>{S.cost=e.target.value;upd()};
+$("clr").onclick=()=>{if(confirm("Reset this pool to the preset list and clear its spin counts?")){S.t=seed(S.pool);S.sel={};build()}};
 $("mode").onchange=e=>{S.mode=e.target.value;upd()};
 $("k").oninput=e=>{S.k=e.target.value;upd()};
 $("n").oninput=()=>upd();
