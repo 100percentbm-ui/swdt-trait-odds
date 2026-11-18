@@ -1,1412 +1,162 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Droid Tycoon • Trait Roll Price Directory</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Inter', 'sans-serif'],
-            mono: ['JetBrains Mono', 'monospace'],
-          },
-          colors: {
-            space: {
-              950: '#060911',
-              900: '#0b101d',
-              850: '#101729',
-              800: '#162038',
-            }
-          }
-        }
-      }
-    };
-  </script>
-  <style>
-    body {
-      background-color: #060911;
-      background-image:
-        radial-gradient(circle at 15% 0%, rgba(56, 189, 248, 0.08) 0%, transparent 42%),
-        radial-gradient(circle at 85% 10%, rgba(192, 132, 252, 0.07) 0%, transparent 42%),
-        radial-gradient(circle at 50% 100%, rgba(45, 212, 191, 0.05) 0%, transparent 50%);
-      color: #f8fafc;
-      min-height: 100vh;
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SWDT Trait Odds</title>
+<style>
+:root{--bg:#f4f6fa;--card:#fff;--tx:#14181f;--mu:#667085;--bd:#d9dee7;--ac:#1f6feb;--ok:#1a7f4b;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b0e14;--card:#131824;--tx:#e6eaf2;--mu:#8b95a7;--bd:#252d3d;--ac:#4aa3ff;--ok:#4cd08a}}
+:root[data-theme="dark"]{--bg:#0b0e14;--card:#131824;--tx:#e6eaf2;--mu:#8b95a7;--bd:#252d3d;--ac:#4aa3ff;--ok:#4cd08a}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:860px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:0 0 4px}h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--mu);margin:0 0 10px}
+p.s{color:var(--mu);margin:0 0 14px;font-size:13px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:14px}
+.tw{overflow:auto;max-height:460px}table{width:100%;border-collapse:collapse;min-width:620px}
+th{position:sticky;top:0;background:var(--card);text-align:left;font-size:12px;color:var(--mu);font-weight:600;padding:4px 6px}td{padding:4px 6px;border-top:1px solid var(--bd)}
+input,select,textarea,button{font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:6px 8px}
+input[type=text],input[type=number]{width:100%}td input[type=number]{width:84px}
+input[type=checkbox]{width:18px;height:18px}
+button{cursor:pointer}button.p{background:var(--ac);border-color:var(--ac);color:#fff}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.g{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.k{background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:10px}
+.k b{display:block;font-size:20px}.k span{font-size:12px;color:var(--mu)}
+textarea{width:100%;min-height:90px;font-family:ui-monospace,Consolas,monospace;font-size:13px}
+.mu{color:var(--mu);font-size:12px}
+</style></head><body><main>
+<h1>SWDT Trait Odds</h1>
+<p class="s">Every trait roll outcome is preloaded. The game doesn’t publish the odds, so log your scans and the tool estimates them. If you know the odds, enter them and they get blended in.</p>
+
+<div class="card"><h2>1 · Traits</h2>
+<div class="row" style="margin:0 0 10px"><label>Rolling on <select id="pool"></select></label></div>
+<div class="tw"><table><thead><tr><th>Target</th><th>Trait</th><th>Stated odds %</th><th>Spins seen</th><th>Estimate</th><th>95% range</th><th></th></tr></thead><tbody id="tb"></tbody></table></div>
+<div class="row"><button id="add">+ Add trait</button><button id="clr">Reset pool</button></div>
+<div class="row"><label>Estimate method
+<select id="mode"><option value="blend">Blend (stated + observed)</option><option value="obs">Observed only</option><option value="stated">Stated only</option></select></label>
+<label>Trust in stated odds (pseudo-spins) <input id="k" type="number" min="0" value="50" style="width:80px"></label></div>
+<p class="mu">Stated odds are normalized to 100%. Blend treats them as a prior worth that many spins, so real data takes over as you log more. Higher trust = slower to move; 0 = observed only.</p>
+<div class="row"><span class="mu" id="tot"></span></div>
+</div>
+
+<div class="card"><h2>2 · Log spins</h2>
+<div class="row" id="log"></div>
+<p class="mu">Tap the trait you landed to add 1 spin. Use − to undo.</p>
+</div>
+
+<div class="card"><h2>3 · Odds for your target</h2>
+<div class="row" style="margin:0 0 10px"><label>Spins available <input id="n" type="number" min="1" value="100" style="width:100px"></label><label>Nova Crystals per spin <input id="cost" type="number" min="0" value="10" style="width:90px"></label></div>
+<div class="g" id="res"></div>
+<p class="mu" id="note"></p>
+</div>
+
+<div class="card"><h2>Bulk paste / backup</h2>
+<textarea id="bulk" placeholder="One per line: Trait name, odds %, spins seen (optional)&#10;Lucky, 12.5, 4"></textarea>
+<div class="row"><button id="imp">Import lines</button><button id="exp">Export lines</button></div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const Q=["Default","Gold","Diamond","Rainbow"];
+const STD=[["Credit Per Second Multiplier","%",[10,20,30,50]],["Pickaxe Level","",[2,4,6,10]],["Health","",[50,100,150,250]],["Crafting Speed","%",[5,10,15,25]],["Critical Chance","%",[5,10,15,25]],["Critical Amount","%",[10,20,30,50]],["Upgrade Chip Bonus","%",[20,40,60,100]],["Scrap Specialist","%",[10,20,30,50]],["Fusion Expert","%",[20,40,70,100]],["Mission Efficiency","%",[5,10,15,25]],["Offline Earnings","%",[2,4,6,10]]];
+const RO=[["Passive Credits","25% credits/5s as companion"],["Overclocked","2x companion bonus"],["Chip Finder","+100% chips on build"],["Fusion Preservation","kept in fusion, trait locks"],["Golden Splash Refill","gold splash every 2 min"]];
+const ICON={"BB-8":"Upgrade Chip Master","Mister Bones":"Lifesteal","IG-11 Marshal":"Blueprint Protector","DJ R-3X":"World Mission Master","CB-23":"Hyperdrive","R2-D2":"Double Crate Chance","C-3PO":"Droid Sell Master","Chopper":"Crit Expert","D-O":"Fusion Master","WG-22":"Flawless Duplicator","Scourge Prime":"Hivemind Bonus (+5)"};
+const seed=pool=>{const r=[];
+  STD.forEach(([n,u,v])=>Q.forEach((q,j)=>r.push({n:n+" · "+q+" ("+(v[j]==null?"+?":"+"+v[j]+u)+")",p:"",c:0})));
+  RO.forEach(([n,d])=>r.push({n:n+" · Rainbow ("+d+")",p:"",c:0}));
+  if(ICON[pool])r.push({n:ICON[pool]+" (Iconic · "+pool+")",p:"",c:0});
+  return r};
+let S={t:null,k:50,mode:"blend",sel:{},pool:"Mythic",cost:10,data:{}};
+try{const r=localStorage.getItem("swdt-odds3");if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
+S.t=S.data[S.pool]||seed(S.pool);
+const fix=a=>a.forEach(t=>{const m=/^(.*) · (Default|Gold|Diamond|Rainbow) \(.*\)$/.exec(t.n||"");if(!m)return;const s=STD.find(x=>x[0]===m[1]);if(!s)return;const v=s[2][Q.indexOf(m[2])];t.n=m[1]+" · "+m[2]+" ("+(v==null?"+?":"+"+v+s[1])+")"});
+Object.values(S.data).forEach(fix);fix(S.t);
+const save=()=>{S.data[S.pool]=S.t;try{localStorage.setItem("swdt-odds3",JSON.stringify(S))}catch(e){}};
+const pc=x=>(x*100).toFixed(x<.01?3:2)+"%";
+const fx=x=>x>0?"1 in "+(1/x>=100?Math.round(1/x):(1/x).toFixed(1)):"—";
+function est(){
+  const sp=S.t.reduce((a,t)=>a+(+t.p||0),0),N=S.t.reduce((a,t)=>a+(+t.c||0),0),k=sp>0?Math.max(0,+S.k||0):0;
+  return S.t.map(t=>{
+    const ps=sp>0?(+t.p||0)/sp:0,c=+t.c||0;let m,lo,hi;
+    if(S.mode==="stated"||(S.mode==="obs"&&N===0&&false)){m=ps;lo=hi=null}
+    else if(S.mode==="obs"){
+      if(!N){m=0;lo=0;hi=1}else{m=c/N;const z=1.96,d=1+z*z/N,ce=(m+z*z/(2*N))/d,h=z*Math.sqrt(m*(1-m)/N+z*z/(4*N*N))/d;lo=Math.max(0,ce-h);hi=Math.min(1,ce+h)}
+    }else{
+      const a=c+k*ps,n=N+k;if(n===0){m=0;lo=0;hi=1}else{m=a/n;const sd=Math.sqrt(m*(1-m)/(n+1));lo=Math.max(0,m-1.96*sd);hi=Math.min(1,m+1.96*sd)}
     }
-
-    /* Custom Scrollbar */
-    ::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
-    }
-    ::-webkit-scrollbar-track {
-      background: #0b101d;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: #1e293b;
-      border-radius: 9999px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: #334155;
-    }
-
-    /* Rarity Glass Cards & Glows */
-    .card-common {
-      border-color: rgba(148, 163, 184, 0.22);
-      box-shadow: 0 4px 20px -4px rgba(148, 163, 184, 0.06);
-    }
-    .card-common:hover {
-      border-color: rgba(148, 163, 184, 0.5);
-      box-shadow: 0 8px 28px -4px rgba(148, 163, 184, 0.14);
-    }
-
-    .card-rare {
-      border-color: rgba(56, 189, 248, 0.26);
-      box-shadow: 0 4px 20px -4px rgba(56, 189, 248, 0.08);
-    }
-    .card-rare:hover {
-      border-color: rgba(56, 189, 248, 0.6);
-      box-shadow: 0 8px 28px -4px rgba(56, 189, 248, 0.2);
-    }
-
-    .card-epic {
-      border-color: rgba(192, 132, 252, 0.28);
-      box-shadow: 0 4px 20px -4px rgba(192, 132, 252, 0.09);
-    }
-    .card-epic:hover {
-      border-color: rgba(192, 132, 252, 0.65);
-      box-shadow: 0 8px 28px -4px rgba(192, 132, 252, 0.22);
-    }
-
-    .card-legendary {
-      border-color: rgba(251, 191, 36, 0.32);
-      box-shadow: 0 4px 22px -4px rgba(251, 191, 36, 0.1);
-    }
-    .card-legendary:hover {
-      border-color: rgba(251, 191, 36, 0.72);
-      box-shadow: 0 8px 30px -4px rgba(251, 191, 36, 0.24);
-    }
-
-    .card-mythic {
-      border-color: rgba(251, 113, 133, 0.34);
-      box-shadow: 0 4px 22px -4px rgba(251, 113, 133, 0.11);
-    }
-    .card-mythic:hover {
-      border-color: rgba(251, 113, 133, 0.75);
-      box-shadow: 0 8px 30px -4px rgba(251, 113, 133, 0.26);
-    }
-
-    .card-iconic {
-      border-color: rgba(45, 212, 191, 0.38);
-      background-image: linear-gradient(145deg, rgba(16, 23, 41, 0.92), rgba(20, 34, 46, 0.88));
-      box-shadow: 0 4px 24px -4px rgba(45, 212, 191, 0.14), inset 0 1px 0 0 rgba(250, 204, 21, 0.18);
-    }
-    .card-iconic:hover {
-      border-color: rgba(250, 204, 21, 0.7);
-      box-shadow: 0 8px 32px -4px rgba(45, 212, 191, 0.28), 0 0 16px rgba(250, 204, 21, 0.15);
-    }
-
-    .no-scrollbar::-webkit-scrollbar {
-      display: none;
-    }
-    .no-scrollbar {
-      -ms-overflow-style: none;
-      scrollbar-width: none;
-    }
-  </style>
-</head>
-<body class="antialiased selection:bg-sky-500/30 selection:text-sky-200">
-
-  <!-- Top Navigation / Header -->
-  <header class="sticky top-0 z-40 border-b border-slate-800/80 bg-space-950/85 backdrop-blur-xl">
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-      <div class="flex flex-col gap-3 py-4 md:flex-row md:items-center md:justify-between">
-        <!-- Brand -->
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-sky-400 to-indigo-600 shadow-lg shadow-sky-500/20">
-              <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
-              </svg>
-            </div>
-            <div>
-              <div class="flex items-center gap-2">
-                <h1 class="text-lg font-extrabold tracking-tight text-white sm:text-xl">DROID TYCOON</h1>
-                <span class="rounded-md border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-sky-300">
-                  Index v2.4
-                </span>
-              </div>
-              <p class="text-xs text-slate-400">Trait Roll Price Directory &amp; Fusion Matrix</p>
-            </div>
-          </div>
-
-          <!-- Mobile Edit Mode Toggle -->
-          <button
-            id="mobileEditToggle"
-            onclick="toggleEditMode()"
-            class="flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800/90 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:border-slate-600 md:hidden"
-          >
-            <span class="edit-indicator h-2 w-2 rounded-full bg-slate-500"></span>
-            <span class="edit-label">Edit Prices</span>
-          </button>
-        </div>
-
-        <!-- Desktop & Tablet Action Controls -->
-        <div class="flex flex-wrap items-center gap-2">
-          <!-- Edit Mode Toggle -->
-          <button
-            id="desktopEditToggle"
-            onclick="toggleEditMode()"
-            class="hidden items-center gap-2 rounded-xl border border-slate-700 bg-slate-800/90 px-3.5 py-2 text-xs font-semibold text-slate-200 transition hover:border-slate-500 md:flex"
-          >
-            <span class="edit-indicator h-2 w-2 rounded-full bg-slate-500"></span>
-            <span class="edit-label">Quick Edit Mode: OFF</span>
-          </button>
-
-          <!-- Bulk Rarity Pricing -->
-          <button
-            onclick="openBulkModal()"
-            class="flex items-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3.5 py-2 text-xs font-semibold text-amber-300 transition hover:bg-amber-500/20"
-          >
-            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-            </svg>
-            <span>Bulk Set by Rarity</span>
-          </button>
-
-          <!-- Import / Export JSON -->
-          <button
-            onclick="openDataModal()"
-            class="flex items-center gap-1.5 rounded-xl border border-slate-700/90 bg-space-850 px-3.5 py-2 text-xs font-semibold text-slate-200 transition hover:border-slate-600 hover:bg-slate-800"
-          >
-            <svg class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-            </svg>
-            <span>JSON Backup</span>
-          </button>
-
-          <!-- Download Standalone Hostable HTML -->
-          <button
-            onclick="downloadStandaloneHTML()"
-            title="Downloads a ready-to-host index.html with your current custom prices permanently saved inside"
-            class="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 px-3.5 py-2 text-xs font-semibold text-white shadow-md shadow-sky-500/20 transition hover:from-sky-400 hover:to-indigo-500"
-          >
-            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-            <span>Export Hostable HTML</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  </header>
-
-  <!-- Main Workspace -->
-  <main class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-
-    <!-- Stats Strip -->
-    <div class="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-      <div class="rounded-2xl border border-slate-800/90 bg-space-900/80 p-3.5 backdrop-blur-md">
-        <p class="text-[11px] font-medium uppercase tracking-wider text-slate-400">Total Droids</p>
-        <div class="mt-1 flex items-baseline justify-between">
-          <span id="statTotal" class="font-mono text-xl font-bold text-white">101</span>
-          <span class="text-xs text-slate-500">6 Rarities</span>
-        </div>
-      </div>
-      <div class="rounded-2xl border border-slate-800/90 bg-space-900/80 p-3.5 backdrop-blur-md">
-        <p class="text-[11px] font-medium uppercase tracking-wider text-slate-400">Prices Configured</p>
-        <div class="mt-1 flex items-baseline justify-between">
-          <span id="statPriced" class="font-mono text-xl font-bold text-emerald-400">0</span>
-          <span id="statPercent" class="font-mono text-xs text-slate-500">0%</span>
-        </div>
-      </div>
-      <div class="rounded-2xl border border-slate-800/90 bg-space-900/80 p-3.5 backdrop-blur-md">
-        <p class="text-[11px] font-medium uppercase tracking-wider text-slate-400">Fusion Droids</p>
-        <div class="mt-1 flex items-baseline justify-between">
-          <span id="statFusion" class="font-mono text-xl font-bold text-sky-400">17</span>
-          <span class="text-xs text-slate-500">Craftable</span>
-        </div>
-      </div>
-      <div class="rounded-2xl border border-slate-800/90 bg-space-900/80 p-3.5 backdrop-blur-md">
-        <p class="text-[11px] font-medium uppercase tracking-wider text-slate-400">Showing Now</p>
-        <div class="mt-1 flex items-baseline justify-between">
-          <span id="statShowing" class="font-mono text-xl font-bold text-purple-400">101</span>
-          <span class="text-xs text-slate-500">Filtered</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Search & Filter Control Panel -->
-    <div class="mb-6 rounded-2xl border border-slate-800/90 bg-space-900/85 p-4 shadow-xl backdrop-blur-md">
-      <!-- Top Filter Row: Search, Type, Specialty, View Switcher -->
-      <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <!-- Search Input -->
-        <div class="relative flex-1">
-          <svg class="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          <input
-            id="searchInput"
-            type="text"
-            placeholder="Search droid name, fusion ingredients (e.g. 'KX', 'B1 HEAVY'), or specialty..."
-            oninput="handleSearch(this.value)"
-            class="w-full rounded-xl border border-slate-700/80 bg-space-950/90 py-2.5 pl-10 pr-9 text-sm text-white placeholder-slate-500 transition focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
-          />
-          <button
-            id="clearSearchBtn"
-            onclick="clearSearch()"
-            class="hidden absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-0.5 text-slate-400 hover:text-white"
-            title="Clear search"
-          >
-            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        <!-- Secondary Filters & View Toggle -->
-        <div class="flex flex-wrap items-center gap-2">
-          <!-- Category Filter (All / Standard / Fusion) -->
-          <select
-            id="typeFilter"
-            onchange="setTypeFilter(this.value)"
-            class="rounded-xl border border-slate-700/80 bg-space-950/90 px-3 py-2.5 text-xs font-medium text-slate-200 focus:border-sky-500 focus:outline-none"
-          >
-            <option value="all">All Types (Standard &amp; Fusion)</option>
-            <option value="standard">Standard Droids Only</option>
-            <option value="fusion">Fusion Droids Only (17)</option>
-          </select>
-
-          <!-- Specialty Filter (For Fusions) -->
-          <select
-            id="specialtyFilter"
-            onchange="setSpecialtyFilter(this.value)"
-            class="rounded-xl border border-slate-700/80 bg-space-950/90 px-3 py-2.5 text-xs font-medium text-slate-200 focus:border-sky-500 focus:outline-none"
-          >
-            <option value="all">All Specialties</option>
-            <option value="Worker">Worker Fusions</option>
-            <option value="Battle">Battle Fusions</option>
-            <option value="Astro">Astro Fusions</option>
-          </select>
-
-          <!-- Sort Selector -->
-          <select
-            id="sortFilter"
-            onchange="setSortFilter(this.value)"
-            class="rounded-xl border border-slate-700/80 bg-space-950/90 px-3 py-2.5 text-xs font-medium text-slate-200 focus:border-sky-500 focus:outline-none"
-          >
-            <option value="default">Sort: Rarity Order</option>
-            <option value="price-desc">Price: High to Low</option>
-            <option value="price-asc">Price: Low to High</option>
-            <option value="name-asc">Name: A to Z</option>
-          </select>
-
-          <!-- View Switcher (Grid vs Table) -->
-          <div class="flex rounded-xl border border-slate-700/80 bg-space-950/90 p-1">
-            <button
-              id="viewGridBtn"
-              onclick="setViewMode('grid')"
-              class="flex items-center gap-1 rounded-lg bg-slate-800 px-2.5 py-1.5 text-xs font-semibold text-white transition"
-              title="Card Grid View"
-            >
-              <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-              </svg>
-              <span class="hidden sm:inline">Grid</span>
-            </button>
-            <button
-              id="viewTableBtn"
-              onclick="setViewMode('table')"
-              class="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-400 transition hover:text-white"
-              title="Compact Table View"
-            >
-              <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-              </svg>
-              <span class="hidden sm:inline">Table</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Rarity Filter Pills -->
-      <div id="rarityPills" class="no-scrollbar mt-4 flex items-center gap-2 overflow-x-auto pb-1">
-        <!-- Populated dynamically via JS -->
-      </div>
-    </div>
-
-    <!-- Tip Banner -->
-    <div class="mb-6 flex flex-col justify-between gap-2 rounded-xl border border-sky-500/20 bg-sky-500/5 px-4 py-2.5 text-xs text-slate-300 sm:flex-row sm:items-center">
-      <div class="flex items-center gap-2">
-        <span class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-500/20 text-sky-400">
-          <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </span>
-        <span>
-          <strong class="text-white">Tip:</strong> Click any Trait Roll Price badge (or turn on <strong class="text-sky-300">Quick Edit Mode</strong>) to type numbers or shorthand like <code class="rounded bg-slate-800 px-1.5 py-0.5 font-mono text-sky-300">2.5k</code>, <code class="rounded bg-slate-800 px-1.5 py-0.5 font-mono text-sky-300">15M</code>, or <code class="rounded bg-slate-800 px-1.5 py-0.5 font-mono text-sky-300">1.2B</code>.
-        </span>
-      </div>
-      <span class="shrink-0 font-mono text-[11px] text-slate-400">Auto-saved to browser</span>
-    </div>
-
-    <!-- Droid Directory Container -->
-    <div id="droidContainer"></div>
-
-    <!-- Empty State -->
-    <div id="emptyState" class="hidden rounded-2xl border border-slate-800 bg-space-900/70 py-16 text-center">
-      <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-800 text-slate-400">
-        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      </div>
-      <h3 class="text-base font-bold text-white">No droids match your filters</h3>
-      <p class="mt-1 text-xs text-slate-400">Try adjusting your search query, rarity tab, or fusion filter.</p>
-      <button
-        onclick="resetAllFilters()"
-        class="mt-4 rounded-xl bg-slate-800 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-700"
-      >
-        Reset All Filters
-      </button>
-    </div>
-
-  </main>
-
-  <!-- Footer -->
-  <footer class="mt-12 border-t border-slate-800/80 bg-space-950/60 py-6 text-center text-xs text-slate-500">
-    <p>Droid Tycoon Trait Roll Price Catalog &bull; Built for instant static hosting (Netlify, Vercel, GitHub Pages)</p>
-  </footer>
-
-  <!-- ===================================================================== -->
-  <!-- MODAL 1: Bulk Set Prices by Rarity                                    -->
-  <!-- ===================================================================== -->
-  <div id="bulkModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
-    <div class="w-full max-w-lg rounded-2xl border border-slate-700 bg-space-900 p-6 shadow-2xl">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-4">
-        <div>
-          <h2 class="text-lg font-bold text-white">Bulk Set Prices by Rarity</h2>
-          <p class="text-xs text-slate-400">Assign a Trait Roll Price across an entire rarity tier at once.</p>
-        </div>
-        <button onclick="closeBulkModal()" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white">
-          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-
-      <div class="mt-4 space-y-3" id="bulkRarityInputs">
-        <!-- Generated dynamically -->
-      </div>
-
-      <div class="mt-4 flex items-center gap-2 rounded-xl border border-slate-800 bg-space-950/70 p-3">
-        <input id="bulkOverwriteCheck" type="checkbox" checked class="h-4 w-4 rounded border-slate-600 bg-slate-800 text-sky-500 focus:ring-sky-500" />
-        <label for="bulkOverwriteCheck" class="text-xs text-slate-300">
-          Overwrite existing prices (uncheck to only fill droids currently marked <span class="font-mono text-slate-400">Unset</span>)
-        </label>
-      </div>
-
-      <div class="mt-6 flex items-center justify-end gap-2">
-        <button onclick="closeBulkModal()" class="rounded-xl border border-slate-700 px-4 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-800">
-          Cancel
-        </button>
-        <button onclick="applyBulkPrices()" class="rounded-xl bg-sky-500 px-4 py-2 text-xs font-semibold text-white shadow-lg shadow-sky-500/25 hover:bg-sky-400">
-          Apply Rarity Prices
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===================================================================== -->
-  <!-- MODAL 2: JSON Import / Export / Reset                                 -->
-  <!-- ===================================================================== -->
-  <div id="dataModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
-    <div class="w-full max-w-xl rounded-2xl border border-slate-700 bg-space-900 p-6 shadow-2xl">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-4">
-        <div>
-          <h2 class="text-lg font-bold text-white">Backup, Share &amp; Restore Prices (JSON)</h2>
-          <p class="text-xs text-slate-400">Copy your current price configuration or paste a JSON backup to load it.</p>
-        </div>
-        <button onclick="closeDataModal()" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white">
-          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-
-      <div class="mt-4">
-        <div class="mb-2 flex items-center justify-between">
-          <label class="text-xs font-semibold text-slate-300">Price Data JSON</label>
-          <button onclick="copyJsonToClipboard()" class="rounded-lg bg-slate-800 px-2.5 py-1 text-xs font-medium text-sky-400 hover:bg-slate-700">
-            Copy JSON
-          </button>
-        </div>
-        <textarea
-          id="jsonTextarea"
-          rows="8"
-          class="w-full rounded-xl border border-slate-700 bg-space-950 p-3 font-mono text-xs text-slate-200 focus:border-sky-500 focus:outline-none"
-          placeholder='{"Mouse": 500, "R2-D2": 250000}'
-        ></textarea>
-      </div>
-
-      <div class="mt-5 flex flex-wrap items-center justify-between gap-2">
-        <button
-          id="resetConfirmBtn"
-          onclick="handleResetPrices()"
-          class="rounded-xl border border-rose-500/30 bg-rose-500/10 px-3.5 py-2 text-xs font-semibold text-rose-300 transition hover:bg-rose-500/20"
-        >
-          Clear All Prices
-        </button>
-
-        <div class="flex items-center gap-2">
-          <button onclick="closeDataModal()" class="rounded-xl border border-slate-700 px-4 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-800">
-            Close
-          </button>
-          <button onclick="importJsonPrices()" class="rounded-xl bg-emerald-500 px-4 py-2 text-xs font-semibold text-slate-950 shadow-lg shadow-emerald-500/20 hover:bg-emerald-400">
-            Load JSON Prices
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Toast Notification -->
-  <div id="toast" class="pointer-events-none fixed bottom-5 right-5 z-50 translate-y-4 opacity-0 transition-all duration-300">
-    <div class="flex items-center gap-2.5 rounded-xl border border-slate-700 bg-space-850 px-4 py-3 text-xs font-semibold text-white shadow-2xl">
-      <span id="toastDot" class="h-2 w-2 rounded-full bg-emerald-400"></span>
-      <span id="toastMessage">Saved!</span>
-    </div>
-  </div>
-
-  <!-- ===================================================================== -->
-  <!-- APPLICATION LOGIC & COMPLETE 101-DROID DATABASE                       -->
-  <!-- ===================================================================== -->
-  <script>
-    /**
-     * DEFAULT_PRICES_EMBEDDED
-     * When you click "Export Hostable HTML", this object is automatically populated
-     * with all your custom prices so anyone visiting your hosted website sees them immediately!
-     */
-    const DEFAULT_PRICES_EMBEDDED = {};
-
-    /**
-     * Complete Catalog of all 101 Droids grouped by Rarity with Fusion details
-     */
-    const DROID_CATALOG = [
-      // COMMON (11)
-      { id: "mouse", name: "Mouse", rarity: "Common", fusion: false },
-      { id: "pit", name: "Pit", rarity: "Common", fusion: false },
-      { id: "gonk", name: "Gonk", rarity: "Common", fusion: false },
-      { id: "cb", name: "CB", rarity: "Common", fusion: false },
-      { id: "r3", name: "R3", rarity: "Common", fusion: false },
-      { id: "r5", name: "R5", rarity: "Common", fusion: false },
-      { id: "r8", name: "R8", rarity: "Common", fusion: false },
-      { id: "imperial-probe", name: "Imperial Probe", rarity: "Common", fusion: false },
-      { id: "b1-battle", name: "B1 Battle", rarity: "Common", fusion: false },
-      { id: "drk-1-probe", name: "DRK-1 Probe", rarity: "Common", fusion: false },
-      { id: "id10", name: "ID10", rarity: "Common", fusion: false },
-
-      // RARE (19)
-      { id: "bdx-explorer", name: "BDX Explorer", rarity: "Rare", fusion: false },
-      { id: "arg", name: "ARG", rarity: "Rare", fusion: false },
-      { id: "senate-hovercam", name: "Senate Hovercam", rarity: "Rare", fusion: false },
-      { id: "bu-4d", name: "BU-4D", rarity: "Rare", fusion: false },
-      { id: "bal-core", name: "Bal-Core", rarity: "Rare", fusion: false },
-      { id: "roll-r", name: "Roll-R", rarity: "Rare", fusion: false },
-      { id: "2bb", name: "2BB", rarity: "Rare", fusion: false },
-      { id: "a-lt", name: "A-LT", rarity: "Rare", fusion: false },
-      { id: "r4", name: "R4", rarity: "Rare", fusion: false },
-      { id: "r9", name: "R9", rarity: "Rare", fusion: false },
-      { id: "b1-security", name: "B1 Security", rarity: "Rare", fusion: false },
-      { id: "nav-ex", name: "NAV-EX", rarity: "Rare", fusion: false },
-      { id: "vect-arm", name: "Vect-Arm", rarity: "Rare", fusion: false },
-      { id: "hov-r", name: "HOV-R", rarity: "Rare", fusion: false },
-      { id: "eg-58", name: "EG-58", rarity: "Rare", fusion: false },
-      { id: "sa-5", name: "SA-5", rarity: "Rare", fusion: false },
-      { id: "whl-ex", name: "WHL-EX", rarity: "Rare", fusion: true, specialty: "Worker", recipe: "ARG + MOUSE x2" },
-      { id: "btl-r", name: "BTL-R", rarity: "Rare", fusion: true, specialty: "Battle", recipe: "R9 + BDX + B1 BATTLE" },
-      { id: "zro-tec", name: "ZRO-TEC", rarity: "Rare", fusion: true, specialty: "Astro", recipe: "ID10 x2 + 2BB" },
-
-      // EPIC (26)
-      { id: "groundmech", name: "Groundmech", rarity: "Epic", fusion: false },
-      { id: "l0", name: "L0", rarity: "Epic", fusion: false },
-      { id: "amp-walker", name: "AMP Walker", rarity: "Epic", fusion: false },
-      { id: "sen-tri", name: "Sen-Tri", rarity: "Epic", fusion: false },
-      { id: "opti-pod", name: "Opti-Pod", rarity: "Epic", fusion: false },
-      { id: "gunrunner", name: "Gunrunner", rarity: "Epic", fusion: false },
-      { id: "bb", name: "BB", rarity: "Epic", fusion: false },
-      { id: "r2", name: "R2", rarity: "Epic", fusion: false },
-      { id: "r6", name: "R6", rarity: "Epic", fusion: false },
-      { id: "trak-r", name: "Trak-R", rarity: "Epic", fusion: false },
-      { id: "orb-walker", name: "Orb-Walker", rarity: "Epic", fusion: false },
-      { id: "util-tec", name: "Util-Tec", rarity: "Epic", fusion: false },
-      { id: "b1-heavy", name: "B1 Heavy", rarity: "Epic", fusion: false },
-      { id: "b2-super", name: "B2 Super", rarity: "Epic", fusion: false },
-      { id: "b2-heavy", name: "B2 Heavy", rarity: "Epic", fusion: false },
-      { id: "strike-orb", name: "Strike-Orb", rarity: "Epic", fusion: false },
-      { id: "haul-r", name: "Haul-R", rarity: "Epic", fusion: false },
-      { id: "lng-shot", name: "LNG-Shot", rarity: "Epic", fusion: false },
-      { id: "mph", name: "MPH", rarity: "Epic", fusion: false },
-      { id: "egl", name: "EGL", rarity: "Epic", fusion: false },
-      { id: "kt", name: "KT", rarity: "Epic", fusion: false },
-      { id: "lom", name: "Lom", rarity: "Epic", fusion: false },
-      { id: "n-ul", name: "N-UL", rarity: "Epic", fusion: true, specialty: "Worker", recipe: "B1 HEAVY + GUNRUNNER + BB" },
-      { id: "scrp-r", name: "SCRP-R", rarity: "Epic", fusion: true, specialty: "Astro", recipe: "GONK + GROUNDMECH + R6" },
-      { id: "arm-core", name: "ARM-CORE", rarity: "Epic", fusion: true, specialty: "Battle", recipe: "ARG x2 + B2 HEAVY" },
-      { id: "opt-ar", name: "OPT-AR", rarity: "Epic", fusion: true, specialty: "Battle", recipe: "R2 x2 + B2 SUPER" },
-
-      // LEGENDARY (15)
-      { id: "proto-roller", name: "Proto-Roller", rarity: "Legendary", fusion: false },
-      { id: "mecha-droid", name: "Mecha-Droid", rarity: "Legendary", fusion: false },
-      { id: "mono-walker", name: "Mono-Walker", rarity: "Legendary", fusion: false },
-      { id: "bb9", name: "BB9", rarity: "Legendary", fusion: false },
-      { id: "r7", name: "R7", rarity: "Legendary", fusion: false },
-      { id: "b2-rp", name: "B2-RP", rarity: "Legendary", fusion: false },
-      { id: "cyclo-grav", name: "Cyclo-Grav", rarity: "Legendary", fusion: false },
-      { id: "opti-strike", name: "Opti-Strike", rarity: "Legendary", fusion: false },
-      { id: "j09-4mn", name: "J09-4MN", rarity: "Legendary", fusion: false },
-      { id: "plnk", name: "PLNK", rarity: "Legendary", fusion: false },
-      { id: "pz", name: "PZ", rarity: "Legendary", fusion: false },
-      { id: "ro-tor", name: "RO-TOR", rarity: "Legendary", fusion: true, specialty: "Worker", recipe: "BB9 + PIT + B1 BATTLE" },
-      { id: "fus-3", name: "FUS-3", rarity: "Legendary", fusion: true, specialty: "Worker", recipe: "R7 + B-U4D x2" },
-      { id: "orb-xl", name: "ORB-XL", rarity: "Legendary", fusion: true, specialty: "Battle", recipe: "CB + GUNRUNNER + B2-RP" },
-      { id: "qik-bit", name: "QIK-BIT", rarity: "Legendary", fusion: true, specialty: "Astro", recipe: "GROUNDMECH x2 + BB9" },
-
-      // MYTHIC (19)
-      { id: "snow-mouse", name: "Snow Mouse", rarity: "Mythic", fusion: false },
-      { id: "ric", name: "RIC", rarity: "Mythic", fusion: false },
-      { id: "ric-1200", name: "RIC-1200", rarity: "Mythic", fusion: false },
-      { id: "lep", name: "LEP", rarity: "Mythic", fusion: false },
-      { id: "loadlifter", name: "Loadlifter", rarity: "Mythic", fusion: false },
-      { id: "drft-r", name: "DRFT-R", rarity: "Mythic", fusion: false },
-      { id: "mo-trak", name: "MO-TRAK", rarity: "Mythic", fusion: false },
-      { id: "tri-tek", name: "TRI-TEK", rarity: "Mythic", fusion: false },
-      { id: "cyclens", name: "CYCLENS", rarity: "Mythic", fusion: false },
-      { id: "kx", name: "KX", rarity: "Mythic", fusion: false },
-      { id: "ig", name: "IG", rarity: "Mythic", fusion: false },
-      { id: "ecg", name: "ECG", rarity: "Mythic", fusion: false },
-      { id: "tda", name: "TDA", rarity: "Mythic", fusion: false },
-      { id: "riv-3t", name: "RIV-3T", rarity: "Mythic", fusion: true, specialty: "Worker", recipe: "KX + IG + RIC" },
-      { id: "lug-g", name: "LUG-G", rarity: "Mythic", fusion: true, specialty: "Worker", recipe: "LOADLIFTER + ID10 + R5" },
-      { id: "x-onk", name: "X-ONK", rarity: "Mythic", fusion: true, specialty: "Battle", recipe: "KX x2 + GONK" },
-      { id: "srv-0", name: "SRV-0", rarity: "Mythic", fusion: true, specialty: "Battle", recipe: "RIC-1200 + B1 HEAVY x2" },
-      { id: "axi-pod", name: "AXI-POD", rarity: "Mythic", fusion: true, specialty: "Astro", recipe: "RIC + BDX + R7" },
-      { id: "low-mo", name: "LOW-MO", rarity: "Mythic", fusion: true, specialty: "Astro", recipe: "A-LT x2 + LOADLIFTER" },
-
-      // ICONIC (11)
-      { id: "bb-8", name: "BB-8", rarity: "Iconic", fusion: false },
-      { id: "mister-bones", name: "MISTER BONES", rarity: "Iconic", fusion: false },
-      { id: "ig-11", name: "IG-11", rarity: "Iconic", fusion: false },
-      { id: "dj-r-3x", name: "DJ R-3X", rarity: "Iconic", fusion: false },
-      { id: "cb-23", name: "CB-23", rarity: "Iconic", fusion: false },
-      { id: "c-3po", name: "C-3PO", rarity: "Iconic", fusion: false },
-      { id: "r2-d2", name: "R2-D2", rarity: "Iconic", fusion: false },
-      { id: "chopper", name: "Chopper", rarity: "Iconic", fusion: false },
-      { id: "d-o", name: "D-O", rarity: "Iconic", fusion: false },
-      { id: "wg-22", name: "WG-22", rarity: "Iconic", fusion: false },
-      { id: "scourge-prime", name: "Scourge Prime", rarity: "Iconic", fusion: false },
-    ];
-
-    const RARITIES = ["Common", "Rare", "Epic", "Legendary", "Mythic", "Iconic"];
-
-    const RARITY_STYLES = {
-      Common: {
-        card: "card-common",
-        badge: "border-slate-400/30 bg-slate-400/10 text-slate-300",
-        dot: "bg-slate-400",
-        text: "text-slate-300",
-        pillActive: "border-slate-400 bg-slate-400/20 text-white",
-      },
-      Rare: {
-        card: "card-rare",
-        badge: "border-sky-400/35 bg-sky-400/10 text-sky-300",
-        dot: "bg-sky-400",
-        text: "text-sky-300",
-        pillActive: "border-sky-400 bg-sky-400/20 text-sky-200",
-      },
-      Epic: {
-        card: "card-epic",
-        badge: "border-purple-400/35 bg-purple-400/10 text-purple-300",
-        dot: "bg-purple-400",
-        text: "text-purple-300",
-        pillActive: "border-purple-400 bg-purple-400/20 text-purple-200",
-      },
-      Legendary: {
-        card: "card-legendary",
-        badge: "border-amber-400/40 bg-amber-400/10 text-amber-300",
-        dot: "bg-amber-400",
-        text: "text-amber-300",
-        pillActive: "border-amber-400 bg-amber-400/20 text-amber-200",
-      },
-      Mythic: {
-        card: "card-mythic",
-        badge: "border-rose-400/40 bg-rose-400/10 text-rose-300",
-        dot: "bg-rose-400",
-        text: "text-rose-300",
-        pillActive: "border-rose-400 bg-rose-400/20 text-rose-200",
-      },
-      Iconic: {
-        card: "card-iconic",
-        badge: "border-teal-300/45 bg-gradient-to-r from-teal-400/15 to-amber-300/15 text-teal-200",
-        dot: "bg-teal-300",
-        text: "text-teal-300",
-        pillActive: "border-teal-300 bg-teal-400/20 text-teal-100",
-      },
-    };
-
-    const SPECIALTY_STYLES = {
-      Worker: "border-amber-500/30 bg-amber-500/10 text-amber-300",
-      Battle: "border-rose-500/30 bg-rose-500/10 text-rose-300",
-      Astro: "border-cyan-500/30 bg-cyan-500/10 text-cyan-300",
-    };
-
-    const STORAGE_KEY = "droid_tycoon_trait_prices_v1";
-
-    // Application State
-    let state = {
-      prices: {},
-      search: "",
-      rarity: "All",
-      type: "all",
-      specialty: "all",
-      sort: "default",
-      view: "grid",
-      editMode: false,
-      activeInlineId: null,
-      resetArmed: false,
-    };
-
-    // Initialize prices from Embedded defaults + localStorage
-    function loadPrices() {
-      let stored = {};
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) stored = JSON.parse(raw);
-      } catch (e) {
-        console.warn("Could not read localStorage:", e);
-      }
-      state.prices = { ...DEFAULT_PRICES_EMBEDDED, ...stored };
-    }
-
-    function savePrices() {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state.prices));
-      } catch (e) {
-        console.warn("Could not save to localStorage:", e);
-      }
-      updateStats();
-    }
-
-    /**
-     * Parses numbers and shorthand like "2.5k", "10m", "1.2b", "500t", "1,000"
-     */
-    function parsePriceInput(input) {
-      if (input === null || input === undefined) return null;
-      const clean = String(input).trim().replace(/,/g, "").toLowerCase();
-      if (clean === "") return null;
-
-      const match = clean.match(/^([0-9]*\.?[0-9]+)\s*([kmbtq]?)$/);
-      if (!match) {
-        const num = Number(clean);
-        return Number.isFinite(num) && num >= 0 ? Math.round(num) : NaN;
-      }
-
-      const value = parseFloat(match[1]);
-      const suffix = match[2];
-      const multipliers = {
-        "": 1,
-        k: 1e3,
-        m: 1e6,
-        b: 1e9,
-        t: 1e12,
-        q: 1e15,
-      };
-      return Math.round(value * multipliers[suffix]);
-    }
-
-    /**
-     * Formats numeric prices cleanly with shorthand + exact tooltip
-     */
-    function formatPrice(val) {
-      if (val === null || val === undefined || val === "" || Number.isNaN(Number(val))) {
-        return null;
-      }
-      const n = Number(val);
-      if (n === 0) return "0";
-      if (n >= 1e15) return (n / 1e15).toFixed(2).replace(/\.00$/, "") + "Q";
-      if (n >= 1e12) return (n / 1e12).toFixed(2).replace(/\.00$/, "") + "T";
-      if (n >= 1e9) return (n / 1e9).toFixed(2).replace(/\.00$/, "") + "B";
-      if (n >= 1e6) return (n / 1e6).toFixed(2).replace(/\.00$/, "") + "M";
-      if (n >= 1e4) return (n / 1e3).toFixed(1).replace(/\.0$/, "") + "K";
-      return n.toLocaleString("en-US");
-    }
-
-    function formatExact(val) {
-      if (val === null || val === undefined || val === "") return "Not set";
-      return Number(val).toLocaleString("en-US") + " Credits";
-    }
-
-    // Toast notification helper
-    let toastTimer = null;
-    function showToast(msg, color = "emerald") {
-      const toast = document.getElementById("toast");
-      const toastMsg = document.getElementById("toastMessage");
-      const toastDot = document.getElementById("toastDot");
-      toastMsg.textContent = msg;
-      toastDot.className = `h-2 w-2 rounded-full ${
-        color === "amber" ? "bg-amber-400" : color === "rose" ? "bg-rose-400" : "bg-emerald-400"
-      }`;
-      toast.classList.remove("translate-y-4", "opacity-0");
-      clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => {
-        toast.classList.add("translate-y-4", "opacity-0");
-      }, 2400);
-    }
-
-    // Filtering & Sorting
-    function getFilteredDroids() {
-      const q = state.search.trim().toLowerCase();
-      let list = DROID_CATALOG.filter((d) => {
-        if (state.rarity !== "All" && d.rarity !== state.rarity) return false;
-        if (state.type === "standard" && d.fusion) return false;
-        if (state.type === "fusion" && !d.fusion) return false;
-        if (state.specialty !== "all") {
-          if (!d.fusion || d.specialty !== state.specialty) return false;
-        }
-        if (q) {
-          const hay = `${d.name} ${d.rarity} ${d.specialty || ""} ${d.recipe || ""}`.toLowerCase();
-          if (!hay.includes(q)) return false;
-        }
-        return true;
-      });
-
-      if (state.sort === "name-asc") {
-        list = [...list].sort((a, b) => a.name.localeCompare(b.name));
-      } else if (state.sort === "price-desc") {
-        list = [...list].sort((a, b) => {
-          const pa = state.prices[a.id] ?? -1;
-          const pb = state.prices[b.id] ?? -1;
-          return pb - pa;
-        });
-      } else if (state.sort === "price-asc") {
-        list = [...list].sort((a, b) => {
-          const pa = state.prices[a.id] ?? Number.MAX_SAFE_INTEGER;
-          const pb = state.prices[b.id] ?? Number.MAX_SAFE_INTEGER;
-          return pa - pb;
-        });
-      }
-      return list;
-    }
-
-    // Update top statistics & rarity pills
-    function updateStats() {
-      const total = DROID_CATALOG.length;
-      const pricedCount = DROID_CATALOG.filter(
-        (d) => state.prices[d.id] !== undefined && state.prices[d.id] !== null && state.prices[d.id] !== ""
-      ).length;
-      const fusionCount = DROID_CATALOG.filter((d) => d.fusion).length;
-      const filteredCount = getFilteredDroids().length;
-
-      document.getElementById("statTotal").textContent = total;
-      document.getElementById("statPriced").textContent = pricedCount;
-      document.getElementById("statPercent").textContent = Math.round((pricedCount / total) * 100) + "%";
-      document.getElementById("statFusion").textContent = fusionCount;
-      document.getElementById("statShowing").textContent = filteredCount;
-
-      renderRarityPills();
-    }
-
-    function renderRarityPills() {
-      const container = document.getElementById("rarityPills");
-      const allCount = DROID_CATALOG.length;
-
-      let html = `
-        <button
-          onclick="setRarityFilter('All')"
-          class="flex shrink-0 items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition ${
-            state.rarity === "All"
-              ? "border-white/40 bg-white/15 text-white"
-              : "border-slate-800 bg-space-950/70 text-slate-400 hover:border-slate-700 hover:text-slate-200"
-          }"
-        >
-          <span>All Droids</span>
-          <span class="rounded-md bg-slate-800/90 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">${allCount}</span>
-        </button>
-      `;
-
-      RARITIES.forEach((r) => {
-        const count = DROID_CATALOG.filter((d) => d.rarity === r).length;
-        const style = RARITY_STYLES[r];
-        const isActive = state.rarity === r;
-        html += `
-          <button
-            onclick="setRarityFilter('${r}')"
-            class="flex shrink-0 items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition ${
-              isActive
-                ? style.pillActive
-                : "border-slate-800 bg-space-950/70 text-slate-400 hover:border-slate-700 hover:text-slate-200"
-            }"
-          >
-            <span class="h-2 w-2 rounded-full ${style.dot}"></span>
-            <span>${r}</span>
-            <span class="rounded-md bg-slate-900/90 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">${count}</span>
-          </button>
-        `;
-      });
-
-      container.innerHTML = html;
-    }
-
-    // Coin / Credit SVG Icon
-    function coinIcon() {
-      return `
-        <svg class="h-3.5 w-3.5 shrink-0 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.31-8.86c-1.77-.45-2.34-.94-2.34-1.67 0-.84.79-1.43 2.1-1.43 1.38 0 1.9.66 1.94 1.64h1.71c-.05-1.34-.87-2.57-2.49-2.97V5H10.9v1.69c-1.51.32-2.72 1.3-2.72 2.81 0 1.79 1.49 2.69 3.66 3.21 1.95.46 2.34 1.15 2.34 1.87 0 .53-.39 1.39-2.1 1.39-1.6 0-2.23-.72-2.32-1.64H8.04c.1 1.7 1.36 2.66 2.86 2.97V19h2.34v-1.67c1.52-.29 2.72-1.16 2.73-2.77-.01-2.2-1.9-2.96-3.66-3.42z"/>
-        </svg>
-      `;
-    }
-
-    // Render Directory (Grid or Table)
-    function renderDirectory() {
-      const container = document.getElementById("droidContainer");
-      const emptyState = document.getElementById("emptyState");
-      const droids = getFilteredDroids();
-
-      document.getElementById("statShowing").textContent = droids.length;
-
-      if (droids.length === 0) {
-        container.innerHTML = "";
-        emptyState.classList.remove("hidden");
-        return;
-      }
-      emptyState.classList.add("hidden");
-
-      if (state.view === "grid") {
-        renderGridView(container, droids);
-      } else {
-        renderTableView(container, droids);
-      }
-    }
-
-    function renderGridView(container, droids) {
-      const cardsHtml = droids
-        .map((droid) => {
-          const rStyle = RARITY_STYLES[droid.rarity];
-          const rawPrice = state.prices[droid.id];
-          const formatted = formatPrice(rawPrice);
-          const isEditingThis = state.editMode || state.activeInlineId === droid.id;
-
-          return `
-            <div class="group relative flex flex-col justify-between rounded-2xl border bg-space-900/90 p-4 transition-all duration-200 hover:-translate-y-0.5 ${rStyle.card}">
-              <!-- Top Badges -->
-              <div>
-                <div class="flex items-center justify-between gap-2">
-                  <span class="inline-flex items-center gap-1.5 rounded-lg border px-2 py-0.5 text-[11px] font-semibold ${rStyle.badge}">
-                    <span class="h-1.5 w-1.5 rounded-full ${rStyle.dot}"></span>
-                    ${droid.rarity}
-                  </span>
-
-                  ${
-                    droid.fusion
-                      ? `<div class="flex items-center gap-1">
-                          <span class="rounded-md border border-indigo-400/35 bg-indigo-500/15 px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-indigo-300">
-                            FUSION
-                          </span>
-                          <span class="rounded-md border px-1.5 py-0.5 text-[10px] font-semibold ${SPECIALTY_STYLES[droid.specialty]}">
-                            ${droid.specialty}
-                          </span>
-                        </div>`
-                      : `<span class="font-mono text-[10px] uppercase tracking-wider text-slate-600">Standard</span>`
-                  }
-                </div>
-
-                <!-- Droid Name -->
-                <h3 class="mt-3 text-base font-bold tracking-tight text-white group-hover:text-sky-100">
-                  ${droid.name}
-                </h3>
-
-                <!-- Fusion Recipe Box (if Fusion) -->
-                ${
-                  droid.fusion
-                    ? `<div class="mt-2.5 rounded-xl border border-slate-800/90 bg-space-950/80 px-2.5 py-2">
-                        <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Fusion Recipe</p>
-                        <p class="mt-0.5 font-mono text-[11px] font-medium text-sky-200">${droid.recipe}</p>
-                      </div>`
-                    : `<div class="mt-2.5 flex items-center gap-1.5 text-[11px] text-slate-500">
-                        <span>Standard Hatch / Crate Unit</span>
-                      </div>`
-                }
-              </div>
-
-              <!-- Trait Roll Price Footer -->
-              <div class="mt-4 border-t border-slate-800/80 pt-3">
-                <div class="flex items-center justify-between gap-2">
-                  <span class="text-[11px] font-medium text-slate-400">Trait Roll Price</span>
-                  ${
-                    !isEditingThis
-                      ? `<button
-                          onclick="startInlineEdit('${droid.id}')"
-                          title="Click to edit price (${formatExact(rawPrice)})"
-                          class="flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 font-mono text-xs font-bold transition ${
-                            formatted !== null
-                              ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:border-emerald-400 hover:bg-emerald-500/20"
-                              : "border-slate-700/80 bg-space-950 text-slate-400 hover:border-sky-500/50 hover:text-sky-300"
-                          }"
-                        >
-                          ${formatted !== null ? `${coinIcon()}<span>${formatted}</span>` : `<span>+ Set Price</span>`}
-                        </button>`
-                      : `<div class="flex items-center gap-1">
-                          <input
-                            id="input-${droid.id}"
-                            type="text"
-                            value="${rawPrice !== undefined && rawPrice !== null ? rawPrice : ""}"
-                            placeholder="e.g. 5k"
-                            onkeydown="handlePriceKey(event, '${droid.id}')"
-                            onblur="commitInlineEdit('${droid.id}', this.value)"
-                            class="w-24 rounded-lg border border-sky-500 bg-space-950 px-2 py-1 text-right font-mono text-xs font-bold text-white focus:outline-none"
-                          />
-                        </div>`
-                  }
-                </div>
-              </div>
-            </div>
-          `;
-        })
-        .join("");
-
-      container.innerHTML = `
-        <div class="grid grid-cols-1 gap-3.5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          ${cardsHtml}
-        </div>
-      `;
-
-      if (state.activeInlineId && !state.editMode) {
-        const el = document.getElementById(`input-${state.activeInlineId}`);
-        if (el) {
-          el.focus();
-          el.select();
-        }
-      }
-    }
-
-    function renderTableView(container, droids) {
-      const rowsHtml = droids
-        .map((droid) => {
-          const rStyle = RARITY_STYLES[droid.rarity];
-          const rawPrice = state.prices[droid.id];
-          const formatted = formatPrice(rawPrice);
-          const isEditingThis = state.editMode || state.activeInlineId === droid.id;
-
-          return `
-            <tr class="border-b border-slate-800/70 transition hover:bg-slate-800/35">
-              <td class="whitespace-nowrap px-4 py-3">
-                <div class="flex items-center gap-2.5">
-                  <span class="h-2.5 w-2.5 rounded-full ${rStyle.dot}"></span>
-                  <span class="font-bold text-white">${droid.name}</span>
-                </div>
-              </td>
-              <td class="whitespace-nowrap px-4 py-3">
-                <span class="inline-flex items-center rounded-lg border px-2 py-0.5 text-[11px] font-semibold ${rStyle.badge}">
-                  ${droid.rarity}
-                </span>
-              </td>
-              <td class="whitespace-nowrap px-4 py-3">
-                ${
-                  droid.fusion
-                    ? `<div class="flex items-center gap-1.5">
-                        <span class="rounded border border-indigo-400/35 bg-indigo-500/15 px-1.5 py-0.5 font-mono text-[10px] font-bold text-indigo-300">FUSION</span>
-                        <span class="rounded border px-1.5 py-0.5 text-[10px] font-semibold ${SPECIALTY_STYLES[droid.specialty]}">${droid.specialty}</span>
-                      </div>`
-                    : `<span class="text-xs text-slate-500">Standard</span>`
-                }
-              </td>
-              <td class="px-4 py-3 font-mono text-xs text-slate-300">
-                ${droid.fusion ? `<span class="text-sky-200">${droid.recipe}</span>` : `<span class="text-slate-600">—</span>`}
-              </td>
-              <td class="whitespace-nowrap px-4 py-3 text-right">
-                ${
-                  !isEditingThis
-                    ? `<button
-                        onclick="startInlineEdit('${droid.id}')"
-                        title="${formatExact(rawPrice)}"
-                        class="inline-flex items-center gap-1.5 rounded-xl border px-3 py-1 font-mono text-xs font-bold transition ${
-                          formatted !== null
-                            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300 hover:border-emerald-400"
-                            : "border-slate-700 bg-space-950 text-slate-400 hover:border-sky-500 hover:text-sky-300"
-                        }"
-                      >
-                        ${formatted !== null ? `${coinIcon()}<span>${formatted}</span>` : `<span>+ Set Price</span>`}
-                      </button>`
-                    : `<input
-                        id="input-${droid.id}"
-                        type="text"
-                        value="${rawPrice !== undefined && rawPrice !== null ? rawPrice : ""}"
-                        placeholder="e.g. 10k"
-                        onkeydown="handlePriceKey(event, '${droid.id}')"
-                        onblur="commitInlineEdit('${droid.id}', this.value)"
-                        class="w-28 rounded-lg border border-sky-500 bg-space-950 px-2.5 py-1 text-right font-mono text-xs font-bold text-white focus:outline-none"
-                      />`
-                }
-              </td>
-            </tr>
-          `;
-        })
-        .join("");
-
-      container.innerHTML = `
-        <div class="overflow-hidden rounded-2xl border border-slate-800/90 bg-space-900/90 shadow-xl">
-          <div class="overflow-x-auto">
-            <table class="w-full text-left text-sm">
-              <thead class="border-b border-slate-800 bg-space-950/90 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-                <tr>
-                  <th class="px-4 py-3.5">Droid Name</th>
-                  <th class="px-4 py-3.5">Rarity</th>
-                  <th class="px-4 py-3.5">Category</th>
-                  <th class="px-4 py-3.5">Fusion Recipe</th>
-                  <th class="px-4 py-3.5 text-right">Trait Roll Price</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${rowsHtml}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      `;
-
-      if (state.activeInlineId && !state.editMode) {
-        const el = document.getElementById(`input-${state.activeInlineId}`);
-        if (el) {
-          el.focus();
-          el.select();
-        }
-      }
-    }
-
-    // Inline Editing Handlers
-    function startInlineEdit(id) {
-      state.activeInlineId = id;
-      renderDirectory();
-    }
-
-    function handlePriceKey(event, id) {
-      if (event.key === "Enter") {
-        event.preventDefault();
-        commitInlineEdit(id, event.target.value);
-      } else if (event.key === "Escape") {
-        state.activeInlineId = null;
-        renderDirectory();
-      }
-    }
-
-    function commitInlineEdit(id, rawValue) {
-      const parsed = parsePriceInput(rawValue);
-      if (Number.isNaN(parsed)) {
-        showToast("Invalid price format. Use numbers like 500 or 2.5k", "rose");
-        state.activeInlineId = null;
-        renderDirectory();
-        return;
-      }
-
-      if (parsed === null) {
-        delete state.prices[id];
-      } else {
-        state.prices[id] = parsed;
-      }
-
-      state.activeInlineId = null;
-      savePrices();
-      renderDirectory();
-    }
-
-    // Quick Edit Mode Toggle
-    function toggleEditMode() {
-      state.editMode = !state.editMode;
-      state.activeInlineId = null;
-
-      const desktopBtn = document.getElementById("desktopEditToggle");
-      const mobileBtn = document.getElementById("mobileEditToggle");
-      const indicators = document.querySelectorAll(".edit-indicator");
-      const labels = document.querySelectorAll(".edit-label");
-
-      if (state.editMode) {
-        desktopBtn.classList.add("border-sky-500/60", "bg-sky-500/15", "text-sky-200");
-        mobileBtn.classList.add("border-sky-500/60", "bg-sky-500/15", "text-sky-200");
-        indicators.forEach((el) => (el.className = "edit-indicator h-2 w-2 rounded-full bg-sky-400 animate-pulse"));
-        desktopBtn.querySelector(".edit-label").textContent = "Quick Edit Mode: ON";
-        mobileBtn.querySelector(".edit-label").textContent = "Editing ON";
-        showToast("Quick Edit Mode enabled — type directly into any box");
-      } else {
-        desktopBtn.classList.remove("border-sky-500/60", "bg-sky-500/15", "text-sky-200");
-        mobileBtn.classList.remove("border-sky-500/60", "bg-sky-500/15", "text-sky-200");
-        indicators.forEach((el) => (el.className = "edit-indicator h-2 w-2 rounded-full bg-slate-500"));
-        desktopBtn.querySelector(".edit-label").textContent = "Quick Edit Mode: OFF";
-        mobileBtn.querySelector(".edit-label").textContent = "Edit Prices";
-      }
-
-      renderDirectory();
-    }
-
-    // Filter Setters
-    function handleSearch(val) {
-      state.search = val;
-      const clearBtn = document.getElementById("clearSearchBtn");
-      if (val.trim().length > 0) {
-        clearBtn.classList.remove("hidden");
-      } else {
-        clearBtn.classList.add("hidden");
-      }
-      renderDirectory();
-    }
-
-    function clearSearch() {
-      const input = document.getElementById("searchInput");
-      input.value = "";
-      handleSearch("");
-      input.focus();
-    }
-
-    function setRarityFilter(r) {
-      state.rarity = r;
-      renderRarityPills();
-      renderDirectory();
-    }
-
-    function setTypeFilter(t) {
-      state.type = t;
-      renderDirectory();
-    }
-
-    function setSpecialtyFilter(s) {
-      state.specialty = s;
-      renderDirectory();
-    }
-
-    function setSortFilter(s) {
-      state.sort = s;
-      renderDirectory();
-    }
-
-    function setViewMode(mode) {
-      state.view = mode;
-      const gridBtn = document.getElementById("viewGridBtn");
-      const tableBtn = document.getElementById("viewTableBtn");
-
-      if (mode === "grid") {
-        gridBtn.className = "flex items-center gap-1 rounded-lg bg-slate-800 px-2.5 py-1.5 text-xs font-semibold text-white transition";
-        tableBtn.className = "flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-400 transition hover:text-white";
-      } else {
-        tableBtn.className = "flex items-center gap-1 rounded-lg bg-slate-800 px-2.5 py-1.5 text-xs font-semibold text-white transition";
-        gridBtn.className = "flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-400 transition hover:text-white";
-      }
-      renderDirectory();
-    }
-
-    function resetAllFilters() {
-      state.search = "";
-      state.rarity = "All";
-      state.type = "all";
-      state.specialty = "all";
-      state.sort = "default";
-
-      document.getElementById("searchInput").value = "";
-      document.getElementById("clearSearchBtn").classList.add("hidden");
-      document.getElementById("typeFilter").value = "all";
-      document.getElementById("specialtyFilter").value = "all";
-      document.getElementById("sortFilter").value = "default";
-
-      renderRarityPills();
-      renderDirectory();
-    }
-
-    // =========================================================================
-    // BULK RARITY PRICING MODAL
-    // =========================================================================
-    function openBulkModal() {
-      const container = document.getElementById("bulkRarityInputs");
-      container.innerHTML = RARITIES.map((r) => {
-        const style = RARITY_STYLES[r];
-        const count = DROID_CATALOG.filter((d) => d.rarity === r).length;
-        return `
-          <div class="flex items-center justify-between gap-3 rounded-xl border border-slate-800 bg-space-950/80 px-3.5 py-2.5">
-            <div class="flex items-center gap-2">
-              <span class="h-2.5 w-2.5 rounded-full ${style.dot}"></span>
-              <span class="text-xs font-bold ${style.text}">${r}</span>
-              <span class="text-[11px] text-slate-500">(${count} droids)</span>
-            </div>
-            <input
-              id="bulk-${r}"
-              type="text"
-              placeholder="Leave blank to skip"
-              class="w-36 rounded-lg border border-slate-700 bg-space-900 px-2.5 py-1.5 text-right font-mono text-xs text-white placeholder-slate-600 focus:border-sky-500 focus:outline-none"
-            />
-          </div>
-        `;
-      }).join("");
-
-      const modal = document.getElementById("bulkModal");
-      modal.classList.remove("hidden");
-      modal.classList.add("flex");
-    }
-
-    function closeBulkModal() {
-      const modal = document.getElementById("bulkModal");
-      modal.classList.add("hidden");
-      modal.classList.remove("flex");
-    }
-
-    function applyBulkPrices() {
-      const overwrite = document.getElementById("bulkOverwriteCheck").checked;
-      let updatedCount = 0;
-
-      for (const r of RARITIES) {
-        const val = document.getElementById(`bulk-${r}`).value;
-        if (!val || val.trim() === "") continue;
-
-        const parsed = parsePriceInput(val);
-        if (Number.isNaN(parsed) || parsed === null) {
-          showToast(`Invalid price entered for ${r}`, "rose");
-          return;
-        }
-
-        DROID_CATALOG.filter((d) => d.rarity === r).forEach((d) => {
-          const hasExisting = state.prices[d.id] !== undefined && state.prices[d.id] !== null;
-          if (overwrite || !hasExisting) {
-            state.prices[d.id] = parsed;
-            updatedCount++;
-          }
-        });
-      }
-
-      savePrices();
-      renderDirectory();
-      closeBulkModal();
-      showToast(`Updated Trait Roll Prices for ${updatedCount} droids!`);
-    }
-
-    // =========================================================================
-    // JSON BACKUP & RESTORE MODAL
-    // =========================================================================
-    function openDataModal() {
-      state.resetArmed = false;
-      const resetBtn = document.getElementById("resetConfirmBtn");
-      resetBtn.textContent = "Clear All Prices";
-
-      // Export human-readable map using Droid Names as keys
-      const namedExport = {};
-      DROID_CATALOG.forEach((d) => {
-        if (state.prices[d.id] !== undefined && state.prices[d.id] !== null) {
-          namedExport[d.name] = state.prices[d.id];
-        }
-      });
-
-      document.getElementById("jsonTextarea").value = JSON.stringify(namedExport, null, 2);
-      const modal = document.getElementById("dataModal");
-      modal.classList.remove("hidden");
-      modal.classList.add("flex");
-    }
-
-    function closeDataModal() {
-      const modal = document.getElementById("dataModal");
-      modal.classList.add("hidden");
-      modal.classList.remove("flex");
-    }
-
-    function copyJsonToClipboard() {
-      const textarea = document.getElementById("jsonTextarea");
-      textarea.select();
-      document.execCommand("copy");
-      showToast("JSON price list copied to clipboard!");
-    }
-
-    function importJsonPrices() {
-      const raw = document.getElementById("jsonTextarea").value;
-      try {
-        const parsed = JSON.parse(raw);
-        if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-          throw new Error("Invalid JSON object");
-        }
-
-        const nextPrices = {};
-        let matched = 0;
-
-        DROID_CATALOG.forEach((d) => {
-          // Support lookup by either Droid Name or Droid ID
-          const val = parsed[d.name] !== undefined ? parsed[d.name] : parsed[d.id];
-          if (val !== undefined && val !== null && val !== "") {
-            const num = parsePriceInput(val);
-            if (!Number.isNaN(num) && num !== null) {
-              nextPrices[d.id] = num;
-              matched++;
-            }
-          }
-        });
-
-        state.prices = nextPrices;
-        savePrices();
-        renderDirectory();
-        closeDataModal();
-        showToast(`Loaded prices for ${matched} droids!`);
-      } catch (err) {
-        showToast("Invalid JSON format. Please check syntax.", "rose");
-      }
-    }
-
-    function handleResetPrices() {
-      const btn = document.getElementById("resetConfirmBtn");
-      if (!state.resetArmed) {
-        state.resetArmed = true;
-        btn.textContent = "Click Again to Confirm Clear";
-        showToast("Click again to permanently clear all prices", "amber");
-        return;
-      }
-      state.prices = {};
-      state.resetArmed = false;
-      savePrices();
-      renderDirectory();
-      closeDataModal();
-      showToast("All Trait Roll Prices cleared", "rose");
-    }
-
-    // =========================================================================
-    // STANDALONE HOSTABLE HTML EXPORTER
-    // =========================================================================
-    function downloadStandaloneHTML() {
-      // Grab the current document HTML and inject the user's current state.prices
-      // into DEFAULT_PRICES_EMBEDDED so the downloaded index.html can be hosted
-      // directly on Netlify, Vercel, GitHub Pages, etc. with all prices baked in!
-      let fullHtml = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
-      const serializedPrices = JSON.stringify(state.prices);
-
-      fullHtml = fullHtml.replace(
-        /const DEFAULT_PRICES_EMBEDDED = \{[\s\S]*?\};/,
-        `const DEFAULT_PRICES_EMBEDDED = ${serializedPrices};`
-      );
-
-      const blob = new Blob([fullHtml], { type: "text/html;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "index.html";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      showToast("Downloaded hostable index.html with your custom prices!");
-    }
-
-    // Boot Application
-    window.addEventListener("DOMContentLoaded", () => {
-      loadPrices();
-      updateStats();
-      renderDirectory();
-    });
-  </script>
-</body>
-</html>
+    return{m,lo,hi};
+  });
+}
+function row(t,i){
+  const tr=document.createElement("tr");
+  tr.innerHTML='<td><input type="checkbox"></td><td><input type="text" placeholder="Trait name"></td><td><input type="number" step="any" min="0"></td><td><input type="number" min="0" step="1"></td><td class="e"></td><td class="r mu"></td><td><button>✕</button></td>';
+  const q=tr.querySelectorAll("input");
+  q[0].checked=!!S.sel[i];q[1].value=t.n||"";q[2].value=t.p??"";q[3].value=t.c??"";
+  q[0].onchange=()=>{S.sel[i]=q[0].checked;upd()};
+  q[1].oninput=()=>{t.n=q[1].value;upd(1)};
+  q[2].oninput=()=>{t.p=q[2].value;upd()};
+  q[3].oninput=()=>{t.c=q[3].value;upd()};
+  tr.querySelector("button").onclick=()=>{S.t.splice(i,1);S.sel={};build()};
+  return tr;
+}
+function build(){
+  const tb=$("tb");tb.innerHTML="";S.t.forEach((t,i)=>tb.appendChild(row(t,i)));
+  $("mode").value=S.mode;$("k").value=S.k;$("pool").value=S.pool;$("cost").value=S.cost;logb();upd();
+}
+function logb(){
+  const l=$("log");l.innerHTML="";
+  S.t.forEach((t,i)=>{
+    const d=document.createElement("span");d.style.cssText="display:inline-flex;gap:2px";
+    const b=document.createElement("button"),m=document.createElement("button");
+    b.textContent=(t.n||"Trait "+(i+1))+" ("+(+t.c||0)+")";m.textContent="−";
+    b.onclick=()=>{t.c=(+t.c||0)+1;build()};m.onclick=()=>{t.c=Math.max(0,(+t.c||0)-1);build()};
+    d.append(b,m);l.appendChild(d);
+  });
+  if(!S.t.length)l.innerHTML='<span class="mu">Add traits first.</span>';
+}
+function spinsFor(p,q){return p>0&&p<1?Math.ceil(Math.log(1-q)/Math.log(1-p)):p>=1?1:Infinity}
+function upd(names){
+  const E=est(),rows=$("tb").children;
+  E.forEach((e,i)=>{
+    rows[i].querySelector(".e").textContent=pc(e.m);
+    rows[i].querySelector(".r").textContent=e.lo==null?"—":pc(e.lo)+" – "+pc(e.hi);
+  });
+  const N=S.t.reduce((a,t)=>a+(+t.c||0),0),sp=S.t.reduce((a,t)=>a+(+t.p||0),0);
+  $("tot").textContent="Total spins logged: "+N+(sp>0&&Math.abs(sp-100)>.01?" · stated odds sum to "+(+sp.toFixed(3))+"% (normalized)":"");
+  if(names)logb();
+  const idx=S.t.map((_,i)=>i).filter(i=>S.sel[i]);
+  const R=$("res");
+  if(!idx.length){R.innerHTML='<span class="mu">Tick one or more targets above.</span>';$("note").textContent="";save();return}
+  const p=Math.min(1,idx.reduce((a,i)=>a+E[i].m,0));
+  const n=Math.max(1,+$("n").value||1);
+  const lo=E[0].lo==null?null:Math.min(1,idx.reduce((a,i)=>a+E[i].lo,0)),hi=E[0].lo==null?null:Math.min(1,idx.reduce((a,i)=>a+E[i].hi,0));
+  const at=q=>(1-Math.pow(1-q,n));
+  const cells=[
+    ["Per spin",pc(p),fx(p)],
+    ["Expected spins",p>0?(1/p).toFixed(1):"∞","average to land it"],
+    ["50% likely by",spinsFor(p,.5)+" spins","median"],
+    ["90% likely by",spinsFor(p,.9)+" spins",""],
+    ["99% likely by",spinsFor(p,.99)+" spins",""],
+    ["Within "+n+" spins",pc(at(p)),lo==null?"":pc(at(lo))+" – "+pc(at(hi))],
+    ["Expected cost",p>0?Math.round((+S.cost||0)/p).toLocaleString()+" NC":"∞","at "+(+S.cost||0)+" NC per spin"]
+  ];
+  R.innerHTML=cells.map(c=>'<div class="k"><span>'+c[0]+'</span><b>'+c[1]+'</b><span>'+c[2]+'</span></div>').join("");
+  $("note").textContent=lo==null?"Using stated odds only, so no uncertainty range.":"Ranges are 95% and shrink as you log more spins. Spins are treated as independent.";
+  save();
+}
+$("add").onclick=()=>{S.t.push({n:"",p:"",c:0});build()};
+$("pool").innerHTML=["Mythic"].concat(Object.keys(ICON)).map(d=>'<option value="'+d+'">'+(d==="Mythic"?"Mythic droid (standard pool)":"Iconic: "+d)+'</option>').join("");
+$("pool").onchange=e=>{S.data[S.pool]=S.t;S.pool=e.target.value;S.t=S.data[S.pool]||seed(S.pool);S.sel={};S.cost=S.pool==="Mythic"?10:200;build()};
+$("cost").oninput=e=>{S.cost=e.target.value;upd()};
+$("clr").onclick=()=>{if(confirm("Reset this pool to the preset list and clear its spin counts?")){S.t=seed(S.pool);S.sel={};build()}};
+$("mode").onchange=e=>{S.mode=e.target.value;upd()};
+$("k").oninput=e=>{S.k=e.target.value;upd()};
+$("n").oninput=()=>upd();
+$("imp").onclick=()=>{
+  const L=$("bulk").value.split("\n").map(s=>s.trim()).filter(Boolean);
+  const T=L.map(s=>{const a=s.split(/[,\t]/).map(x=>x.trim());return{n:a[0],p:parseFloat(a[1])||"",c:parseInt(a[2])||0}});
+  if(T.length){S.t=T;S.sel={};build()}
+};
+$("exp").onclick=()=>{$("bulk").value=S.t.map(t=>[t.n,t.p,t.c||0].join(", ")).join("\n")};
+build();
+</script></main></body></html>
